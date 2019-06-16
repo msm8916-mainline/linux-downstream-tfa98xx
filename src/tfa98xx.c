@@ -3317,6 +3317,7 @@ static struct of_device_id tfa98xx_dt_match[] = {
 	{.compatible = "tfa,tfa9912" },
 	{ },
 };
+MODULE_DEVICE_TABLE(of, tfa98xx_dt_match);
 #endif
 
 static struct i2c_driver tfa98xx_i2c_driver = {
