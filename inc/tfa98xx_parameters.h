@@ -715,7 +715,6 @@ typedef struct nxpTfaContainer {
     char type[8];				// “application type name”
     uint16_t ndev;	 			// "nr of device lists"
     uint16_t nprof;	 			// "nr of profile lists"
-    uint16_t nliveData;			// "nr of livedata lists"
     nxpTfaDescPtr_t index[];	// start of item index table
 } nxpTfaContainer_t;
 
