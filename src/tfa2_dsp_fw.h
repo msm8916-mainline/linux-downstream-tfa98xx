@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 NXP Semiconductors, All Rights Reserved.
+ * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -7,26 +7,10 @@
  *
  */
 
-#ifndef TFA98XX_INTERNALS_H
-#define TFA98XX_INTERNALS_H
+#ifndef TFA2_DSP_FW_H
+#define TFA2_DSP_FW_H
 
-#include "config.h"
-
-#include "tfa_service.h"  //TODO cleanup for enum Tfa98xx_Status_ID
-
-/**
- * Return a text version of the firmware status ID code
- * @param status the given status ID code
- * @return the firmware status ID string
- */
-const char *tfadsp_fw_status_string(enum Tfa98xx_Status_ID status);
-int tfadsp_fw_start(struct tfa_device *tfa, int prof_idx, int vstep_idx);
-int tfadsp_fw_get_api_version(struct tfa_device *tfa, uint8_t *buffer);
-#define FW_MAXTAG 150
-int tfadsp_fw_get_tag(struct tfa_device *tfa, uint8_t *buffer);
-int tfadsp_fw_get_status_change(struct tfa_device *tfa, uint8_t *buffer);
-int tfadsp_fw_set_re25(struct tfa_device *tfa, int prim, int sec );
-int tfadsp_fw_get_re25(struct tfa_device *tfa, uint8_t *buffer);
+#include "tfa2_dev.h"
 
 /*
  * the order matches the ACK bits order in TFA98XX_CF_STATUS
@@ -94,6 +78,10 @@ enum tfa_fw_event { /* not all available on each device */
 #define SB_PARAM_GET_MBDRC_DYNAMICS		0x89
 #define SB_PARAM_GET_EXCURSION_FILTERS	0x8A
 #define SB_PARAM_GET_TAG                0xFF
+#define FW_MAXTAG 150
+
+#define SB_PARAM_GET_ZFILTER            0x8F
+#define SB_PARAM_GET_XFILTER            0x90
 
 #define SB_PARAM_SET_EQ					0x0A	/* 2 Equaliser Filters. */
 #define SB_PARAM_SET_PRESET             0x0D	/* Load a preset */
@@ -131,9 +119,31 @@ enum tfa_fw_event { /* not all available on each device */
 #define STATUS_INVALID_PARAM_ID    3
 #define STATUS_INVALID_INFO_ID     4
 
+/* parameter size in words including command id */
+#define TIB_MONO_ALGOPARAMETER_LENGTH		(180+1)
+#define TIB_STEREO_ALGOPARAMETER_LENGTH		(348+1)
+#define TFA_ALGOPARAMETER_LENGTH			(180+1)
+
+#define TIB_MONO_SPEAKERPARAMETER_LENGTH	(151+1)
+#define TIB_STEREO_SPEAKERPARAMETER_LENGTH	(302+1)
+#define TFA_SPEAKERPARAMETER_LENGTH			(151+1)
+
+#define TIB_MONO_MBDRC_LENGTH				(99+1)
+#define TIB_STEREO_MBDRC_LENGTH				(99+1)
+#define TFA_MBDRC_LENGTH					(95+1)
+
+#define TIB_MONO_FILTERCOEFS_LENGTH			(1+6*(10+2+1)+1)
+#define TIB_STEREO_FILTERCOEFS_LENGTH		(1+6*(10+10+2+2+1)+1)
+#define TFA_FILTERCOEFS_LENGTH				(193) //itf(1+6*10)
+
+#define TIB_MONO_EXCURSIONFILTER_LENGTH		(25+1)
+#define TIB_STEREO_EXCURSIONFILTER_LENGTH	(50+1)
+#define TFA_EXCURSIONFILTER_LENGTH			(25+1)
+
+
 /* the maximum message length in the communication with the DSP */
-#define TFA2_MAX_PARAM_SIZE (507*3) /* TFA2 */
-#define TFA1_MAX_PARAM_SIZE (145*3) /* TFA1 */
+#define TFA2_MAX_PARAM_SIZE (TIB_STEREO_ALGOPARAMETER_LENGTH) /*  */
+
 
 #define ROUND_DOWN(a,n) (((a)/(n))*(n))
 
@@ -142,9 +152,7 @@ enum tfa_fw_event { /* not all available on each device */
 #define FEATURE1_DRC   0x200 /* bit9 NOT set means DRC expected */
 
 /* DSP firmware xmem defines */
-#define TFA1_FW_XMEM_CALIBRATION_DONE	231
 #define TFA2_FW_XMEM_CALIBRATION_DONE   516
-#define TFA1_FW_XMEM_COUNT_BOOT			0xa1
 #define TFA2_FW_XMEM_COUNT_BOOT			512
 #define TFA2_FW_XMEM_CMD_COUNT			520
 
@@ -154,6 +162,5 @@ enum tfa_fw_event { /* not all available on each device */
 #define TFA_FW_XMEM_CMD_COUNT 			TFA_FAM_FW(tfa,XMEM_CMD_COUNT)
 
 #define TFA2_FW_ReZ_SCALE	65536
-#define TFA1_FW_ReZ_SCALE	16384
 
-#endif /* TFA98XX_INTERNALS_H */
+#endif /* TFA2_DSP_FW_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 NXP Semiconductors, All Rights Reserved.
+ * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,21 +16,23 @@
 #include <stdint.h>
 #endif
 
-#include "tfa_service.h"
+typedef struct tfa_msg {
+	uint8_t msg_size;
+	unsigned char cmdId[3];
+	int data[9];
+} tfa_msg_t;
 
-#if (defined(WIN32) || defined(_X64))
-/* These warnings are disabled because it is only given by Windows and there is no easy fix */
-#pragma warning(disable:4200)
-#pragma warning(disable:4214)
-#endif
+//#if (defined(WIN32) || defined(_X64))
+///* These warnings are disabled because it is only given by Windows and there is no easy fix */
+//#pragma warning(disable:4200)
+//#pragma warning(disable:4214)
+//#endif
 
 /*
  * profiles & volumesteps
  *
  */
 #define TFA_MAX_PROFILES			(64)
-#define TFA_MAX_VSTEPS				(64)
-#define TFA_MAX_VSTEP_MSG_MARKER	(100) /* This marker  is used to indicate if all msgs need to be written to the device */
 #define TFA_MAX_MSGS				(10)
 
 // the pack pragma is required to make that the size in memory
@@ -71,11 +73,12 @@ typedef enum nxpTfaSamplerate {
 	fs_44k1,     // 44.1kHz
 	fs_48k,      // 48kHz
 	fs_96k,      // 96kHz
+	fs_192k,     // 192kHz
 	fs_count     // Should always be last item.
 } nxpTfaSamplerate_t;
 
 // Keep in sync with nxpTfaSamplerate_t !
-static const int nxpTfaSamplerateHz[fs_count] = { 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 96000 };
+static const int nxpTfaSamplerateHz[fs_count] = { 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 96000, 192000 };
 
 
 /*
@@ -254,7 +257,7 @@ typedef struct nxpTfaEqualizer {
  */
 #define HDR(c1,c2) (c2<<8|c1) // little endian
 typedef enum nxpTfaHeaderType {
-    paramsHdr		= HDR('P','M'), /* containter file */
+    paramsHdr		= HDR('P','M'), /* container file */
     volstepHdr	 	= HDR('V','P'),
     patchHdr	 	= HDR('P','A'),
     speakerHdr	 	= HDR('S','P'),
@@ -293,13 +296,13 @@ typedef struct nxpTfaPatchFile {
  */
 #define NXPTFA_MG_VERSION    '3'
 #define NXPTFA_MG_SUBVERSION "00"
-typedef struct nxpTfaMsgFile {
+typedef struct tfa_msg_file {
 	nxpTfaHeader_t hdr;
 	uint8_t data[];
-} nxpTfaMsgFile_t;
+} tfa_msg_file_t;
 
 /*
- * NOTE the tfa98xx API defines the enum Tfa98xx_config_type that defines
+ * NOTE the tfa98xx API defines the enum tfa9xxx_config_type that defines
  *          the subtypes as decribes below.
  *          tfa98xx_dsp_config_parameter_type() can be used to get the
  *           supported type for the active device..
@@ -375,114 +378,6 @@ typedef struct nxpTfaDrcFile2 {
 } nxpTfaDrc2_t;
 
 /*
- * volume step structures
- */
-// VP01
-#define NXPTFA_VP1_VERSION    '1'
-#define NXPTFA_VP1_SUBVERSION "01"
-typedef struct nxpTfaVolumeStep1 {
-    float attenuation;              // IEEE single float
-    uint8_t preset[TFA98XX_PRESET_LENGTH];
-} nxpTfaVolumeStep1_t;
-
-// VP02
-#define NXPTFA_VP2_VERSION    '2'
-#define NXPTFA_VP2_SUBVERSION "01"
-typedef struct nxpTfaVolumeStep2 {
-    float attenuation;              // IEEE single float
-    uint8_t preset[TFA98XX_PRESET_LENGTH];
-    nxpTfaFilter_t filter[TFA98XX_MAX_EQ];// note: API index counts from 1..10
-} nxpTfaVolumeStep2_t;
-
-/*
- * volumestep file
- */
-#define NXPTFA_VP_VERSION    '1'
-#define NXPTFA_VP_SUBVERSION "00"
-typedef struct nxpTfaVolumeStepFile {
-	nxpTfaHeader_t hdr;
-	uint8_t vsteps;  	// can also be calulated from size+type
-	uint8_t samplerate; // ==enum samplerates, assure 8 bits
-	uint8_t payload; 	//start of variable length contents:N times volsteps
-}nxpTfaVolumeStepFile_t;
-/*
- * volumestep2 file
- */
-typedef struct nxpTfaVolumeStep2File {
-	nxpTfaHeader_t hdr;
-	uint8_t vsteps;  	// can also be calulated from size+type
-	uint8_t samplerate; // ==enum samplerates, assure 8 bits
-	nxpTfaVolumeStep2_t vstep[]; 	//start of variable length contents:N times volsteps
-}nxpTfaVolumeStep2File_t;
-
-/*
- * volumestepMax2 file
- */
-typedef struct nxpTfaVolumeStepMax2File {
-	nxpTfaHeader_t hdr;
-	uint8_t version[3]; 
-	uint8_t NrOfVsteps;
-	uint8_t vstepsBin[]; 
-}nxpTfaVolumeStepMax2File_t;
-
-/*
- * volumestepMax2 file
- * This volumestep should ONLY be used for the use of bin2hdr!
- * This can only be used to find the messagetype of the vstep (without header)
- */
-typedef struct nxpTfaVolumeStepMax2_1File {
-	uint8_t version[3]; 
-	uint8_t NrOfVsteps;
-	uint8_t vstepsBin[]; 
-}nxpTfaVolumeStepMax2_1File_t;
-
-struct nxpTfaVolumeStepRegisterInfo {
-	uint8_t NrOfRegisters;
-	uint16_t registerInfo[];
-};
-
-struct nxpTfaVolumeStepMessageInfo {
-	uint8_t NrOfMessages;
-	uint8_t MessageType;
-	uint24_t MessageLength;
-	uint8_t CmdId[3];
-	uint8_t ParameterData[];
-};
-/**************************old v2 *************************************************/
-
-/*
- * subv 00 volumestep file
- */
-typedef struct nxpTfaOldHeader {
-	uint16_t id;
-	char version[2];     // "V_" : V=version, vv=subversion
-	char subversion[2];  // "vv" : vv=subversion
-	uint16_t size;       // data size in bytes following CRC
-	uint32_t CRC;        // 32-bits CRC for following data
-} nxpTfaOldHeader_t;
-
-typedef struct nxpOldTfaFilter {
-  double bq[5];
-  int32_t type;
-  double frequency;
-  double Q;
-  double gain;
-  uint8_t enabled;
-} nxpTfaOldFilter_t ;
-
-typedef struct nxpTfaOldVolumeStep2 {
-    float attenuation;              // IEEE single float
-    uint8_t preset[TFA98XX_PRESET_LENGTH];
-    nxpTfaOldFilter_t eq[10];
-} nxpTfaOldVolumeStep2_t;
-
-typedef struct nxpTfaOldVolumeStepFile {
-	nxpTfaOldHeader_t hdr;
-	nxpTfaOldVolumeStep2_t step[];
-}nxpTfaOldVolumeStep2File_t;
-/**************************end old v2 *************************************************/
-
-/*
  * speaker file header
  */
 struct nxpTfaSpkHeader {
@@ -516,8 +411,7 @@ typedef struct nxpTfaSpeakerFile {
 	uint8_t data[]; //payload TFA98XX_SPEAKERPARAMETER_LENGTH
 } nxpTfaSpeakerFile_t;
 
-#define NXPTFA_VP3_VERSION    '3'
-#define NXPTFA_VP3_SUBVERSION "00"
+
 
 struct nxpTfaFWVer {
 	uint8_t Major;
@@ -528,7 +422,7 @@ struct nxpTfaFWVer {
 
 struct nxpTfaFWMsg {
 	struct nxpTfaFWVer fwVersion;
-	struct nxpTfaMsg payload;
+	struct tfa_msg payload;
 };
 
 typedef struct nxpTfaLiveData {
@@ -593,7 +487,10 @@ typedef enum nxpTfaDescriptorType {
 	dscSetFwkUseCase,
 	dscSetVddpConfig,
 	dscTfaHal, 
-	dsc_last		// trailer
+	dscInfoText,	// info keyword for storing text into container
+	dscInfoFile,	// info keyword for storing a file into container
+	dsc_last,		// trailer
+	dsc_listend=-1
 } nxpTfaDescriptorType_t;
 
 #define TFA_BITFIELDDSCMSK 0x7fffffff
@@ -678,7 +575,7 @@ typedef struct nxpTfaRegpatch {
  * Mode descriptor
  */
 typedef struct nxpTfaUseCase {
-	int value;	// mode value, maps to enum Tfa98xx_Mode
+	int value;	// mode value, maps to enum tfa9xxx_Mode
 } nxpTfaMode_t;
 
 /*

@@ -7,41 +7,40 @@
 # export CROSS_COMPILE=arm-linux-gnueabihf-
 # export KDIR=../linux
 
-
 # In case of out of tree build, build as a module
 # (when build inside kernel we will not enter this directory and this will have no effect)
-ifeq ($(CONFIG_SND_SOC_TFA98XX),)
-CONFIG_SND_SOC_TFA98XX := m
+ifeq ($(CONFIG_SND_SOC_TFA9XXX),)
+CONFIG_SND_SOC_TFA9XXX := m
 endif
 
 ifneq ($(KERNELRELEASE),)
 
 # add version number derived from Git
 ifeq ($(KDIR),)
-PLMA_TFA_AUDIO_DRV_DIR=$(realpath -f $(srctree)/$(src))
+PLMA_TFA_HAPTIC_DRV_DIR=$(realpath -f $(srctree)/$(src))
 else
-PLMA_TFA_AUDIO_DRV_DIR=$(realpath -f $(src))
+PLMA_TFA_HAPTIC_DRV_DIR=$(realpath -f $(src))
 endif
-GIT_VERSION=$(shell cd $(PLMA_TFA_AUDIO_DRV_DIR); git describe --tags --dirty --match "v[0-9]*.[0-9]*.[0-9]*")
-EXTRA_CFLAGS += -DTFA98XX_GIT_VERSIONS=\"$(GIT_VERSION)\"
+GIT_VERSION=$(shell cd $(PLMA_TFA_HAPTIC_DRV_DIR); git describe --tags --dirty --match "v[0-9]*.[0-9]*.[0-9]*")
+EXTRA_CFLAGS += -DTFA9XXX_GIT_VERSION=\"$(GIT_VERSION)\"
 
-# debugging support (also enables trace_printk)
+# debugging support
 EXTRA_CFLAGS += -DDEBUG
+
+# if enabled, then measure start timing and print it
+#EXTRA_CFLAGS += -DMEASURE_START_TIMING
 
 EXTRA_CFLAGS += -I$(src)/inc
 EXTRA_CFLAGS += -Werror
 
-obj-$(CONFIG_SND_SOC_TFA98XX) := snd-soc-tfa98xx.o
+obj-$(CONFIG_SND_SOC_TFA9XXX) := snd-soc-tfa9xxx.o
 
-snd-soc-tfa98xx-objs += src/tfa98xx.o
-snd-soc-tfa98xx-objs += src/tfa_container.o
-snd-soc-tfa98xx-objs += src/tfa_dsp.o
-snd-soc-tfa98xx-objs += src/tfa_init.o
-
-ifdef TFA_DEBUG
-EXTRA_CFLAGS += -DTFA_DEBUG -DDEBUG
-snd-soc-tfa98xx-objs += src/tfa_debug.o
-endif
+snd-soc-tfa9xxx-objs += src/tfa9xxx.o
+snd-soc-tfa9xxx-objs += src/tfa9xxx_haptic.o
+snd-soc-tfa9xxx-objs += src/tfa2_init.o
+snd-soc-tfa9xxx-objs += src/tfa2_dev.o
+snd-soc-tfa9xxx-objs += src/tfa2_container.o
+snd-soc-tfa9xxx-objs += src/tfa2_haptic.o
 
 else
 
@@ -52,6 +51,6 @@ all:
 
 clean:
 	$(MAKEARCH) -C $(KDIR) M=$(PWD) clean
-	rm -f $(snd-soc-tfa98xx-objs)
+	rm -f $(snd-soc-tfa9xxx-objs)
 
 endif
