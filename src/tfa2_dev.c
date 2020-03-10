@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -508,25 +509,29 @@ int tfa2_dev_force_cold(struct tfa2_device *tfa)
 	tfa->need_sb_config = -1;
 	tfa->need_hb_config = -1;
 
+	if (tfa->is_probus_device) { /* avoid manager MuteAudio timeout */
+		tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_AMPE, 0);
+	}
+
 	tfa2_i2c_write_bf_volatile(tfa->i2c, TFA9XXX_BF_MANSCONF, 0);
 	rc = tfa2_dev_set_state(tfa, TFA_STATE_POWERDOWN);
 //	if ( rc < 0 )
 
-	rc = tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_RST, 1);
-	if ( rc < 0 )
-			return rc;
-	rc = tfa2_dev_set_state(tfa, TFA_STATE_OSC);
-	if ( rc < 0 )
-			return rc;
-
-	if (!tfa->is_probus_device) {
+	if (!tfa->is_probus_device) { /* need clock to set ACS */
+		/* stop DSP */
+		rc = tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_RST, 1);
+		if ( rc < 0 )
+				return rc;
 		/* set ACS */
+		rc = tfa2_dev_set_state(tfa, TFA_STATE_OSC);
+		if ( rc < 0 )
+				return rc;
 		tfa2_i2c_write_cf_mem32_dsp_reset(tfa->i2c, 0x8100, &cf_control, 1, TFA2_CF_MEM_IOMEM);
+		/* Powerdown */
+		tfa2_i2c_write_bf_volatile(tfa->i2c, TFA9XXX_BF_MANSCONF, 0);
+		rc = tfa2_dev_set_state(tfa, TFA_STATE_POWERDOWN);
 	}
 
-	/* Powerdown */
-	tfa2_i2c_write_bf_volatile(tfa->i2c, TFA9XXX_BF_MANSCONF, 0);
-	rc = tfa2_dev_set_state(tfa, TFA_STATE_POWERDOWN);
 	/* set I2CR  */
 	tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_I2CR, 1); /*this will also stop the PLL */
 
@@ -875,16 +880,23 @@ int tfa2_dev_init(struct tfa2_device *tfa)
 	return error;
 }
 
+/*
+ * for probus stop amplifier directly
+ * if DSP then let the DSP do the mute and amplifier control
+ */
 int tfa2_dev_mute(struct tfa2_device *tfa, int state)
 {
+	int rc;
+
 	if (tfa->is_probus_device == 1) {
-		dev_dbg(&tfa->i2c->dev, "no DSP %smute for Probus device\n",
-		        state ? "" : "un");
-		return 0;
+		dev_dbg(&tfa->i2c->dev, "AMP %s\n", state ? "off" : "on");
+		rc = tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_AMPE, state ? 0 : 1);
+	} else {
+		dev_dbg(&tfa->i2c->dev, "DSP %smute\n", state ? "" : "un");
+		return tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_CFSM, state);
 	}
 
-	dev_dbg(&tfa->i2c->dev, "DSP %smute\n", state ? "" : "un");
-	return tfa2_i2c_write_bf(tfa->i2c, TFA9XXX_BF_CFSM, state);
+	return rc;
 }
 
 /*
@@ -1116,11 +1128,11 @@ int tfa2_i2c_bf_poll(struct i2c_client *client, uint16_t bf, uint16_t wait_value
 	int value, rc;
 	int loop_arg = loop;
 
-	/* @400k take 500uS/cycle : wait 500ms first */
-	if ( loop > 1000 ) {
-		loop -= 1000;
-		msleep_interruptible(500);
-	}
+//	/* @400k take 500uS/cycle : wait 500ms first */
+//	if ( loop > 1000 ) {
+//		loop -= 1000;
+//		msleep_interruptible(500);
+//	}
 	do
 		value = tfa2_i2c_read_bf(client, bf); /* read */
 	while (value != wait_value && --loop);

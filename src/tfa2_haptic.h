@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 #ifndef TFA2_HAPTIC_H_
 #define TFA2_HAPTIC_H_
 
@@ -23,8 +25,8 @@ int tfa2_hap_sequencer(struct tfa2_device *tfa, struct tfa2_sequence *seq);
 int tfa2_hap_get_sequencer_duration(struct tfa2_device *tfa, struct tfa2_sequence *seq);
 int tfa2_hap_sequencer_object(struct tfa2_device *tfa, int virtual_obj);
 void tfa2_hap_sequencer_destroy(struct tfa2_sequence *seq);
-int tfa2_hap_cnt_sequencer_count(nxpTfaContainer_t *cnt, int devidx);
-int tfa2_hap_cnt_get_sequencer(nxpTfaContainer_t *cnt, int devidx, int seqidx, struct tfa2_sequence *seq);
+int tfa2_hap_cnt_sequencer_count(tfaContainer_t *cnt, int devidx);
+int tfa2_hap_cnt_get_sequencer(tfaContainer_t *cnt, int devidx, int seqidx, struct tfa2_sequence *seq);
 int tfa2_haptic_obj0_wait_finish(struct i2c_client *client);
 void tfa2_haptic_obj_get(struct haptic_data *data, int idx);
 int tfa2_haptic_get_duration(struct tfa2_device *tfa, int index);

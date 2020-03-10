@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
-
 
 #define pr_fmt(fmt) "%s(): " fmt, __func__
 
@@ -25,7 +25,7 @@
 #ifdef TFA9XXX_GIT_VERSION
   #define TFA9XXX_VERSION TFA9XXX_GIT_VERSION
 #else
-  #define TFA9XXX_VERSION "v8.2.1"
+  #define TFA9XXX_VERSION "v8.5.1"
 #endif
 
 #define I2C_RETRIES 50
@@ -46,7 +46,7 @@ static LIST_HEAD(profile_list);        /* list of user selectable profiles */
 static int tfa9xxx_mixer_profiles = 0; /* number of user selectable profiles */
 static int tfa9xxx_mixer_profile = 0;  /* current mixer profile */
 static struct snd_kcontrol_new *tfa9xxx_controls;
-static nxpTfaContainer_t *tfa9xxx_container = NULL;
+static tfaContainer_t *tfa9xxx_container = NULL;
 
 static int tfa9xxx_kmsg_regs = 0;
 static int tfa9xxx_ftrace_regs = 0;
@@ -275,6 +275,12 @@ static int tfa9xxx_dbgfs_temp_get(void *data, u64 *val)
 	struct i2c_client *i2c = (struct i2c_client *)data;
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
 
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
+
 	mutex_lock(&tfa9xxx->dsp_lock);
 	*val = tfa2_get_exttemp(tfa9xxx->tfa);
 	mutex_unlock(&tfa9xxx->dsp_lock);
@@ -288,6 +294,12 @@ static int tfa9xxx_dbgfs_temp_set(void *data, u64 val)
 {
 	struct i2c_client *i2c = (struct i2c_client *)data;
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
+
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
 
 	mutex_lock(&tfa9xxx->dsp_lock);
 	tfa2_set_exttemp(tfa9xxx->tfa, (short)val);
@@ -377,6 +389,12 @@ static int tfa9xxx_dbgfs_r_get(void *data, u64 *val)
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
 	int mtpex, otc, mtp_value, value;
 
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
+
 	mutex_lock(&tfa9xxx->dsp_lock);
 	mtpex = tfa2_i2c_read_bf(i2c, TFA9XXX_BF_MTPEX);
 	mutex_unlock(&tfa9xxx->dsp_lock);
@@ -428,6 +446,12 @@ static int tfa9xxx_dbgfs_r_set(void *data, u64 val)
 	int value = (int)val;
 	int mtp_value;
 
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
+
 	dev_dbg(&i2c->dev, "%s: R : %d\n", __func__, value);
 
 	mtp_value = (value * (1<<10) + 500) / 1000;
@@ -449,6 +473,12 @@ static int tfa9xxx_dbgfs_f0_get(void *data, u64 *val)
 	struct i2c_client *i2c = (struct i2c_client *)data;
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
 	int mtp_f0;
+
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
 
 	mutex_lock(&tfa9xxx->dsp_lock);
 	mtp_f0 = tfa2_i2c_read_bf(i2c, TFA9XXX_BF_CUSTINFO);
@@ -472,6 +502,12 @@ static int tfa9xxx_dbgfs_f0_set(void *data, u64 val)
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
 	int value = (int)val;
 	uint16_t mtp_f0 =  2 * (value - 80);
+
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
 
 	dev_dbg(&i2c->dev, "%s: F0 : %d, MTP_F0: %d\n", __func__,
 	        value, mtp_f0);
@@ -533,6 +569,12 @@ static int tfa9xxx_dbgfs_probus_open(struct inode *inode, struct file *file)
 {
 	struct i2c_client *i2c = (struct i2c_client *)inode->i_private;
 	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
+
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
 
 	return single_open(file, tfa9xxx_print_is_probus, tfa9xxx);
 }
@@ -607,6 +649,11 @@ static int tfa98xx_haptic_objs_open(struct inode *inode, struct file *file)
 	struct i2c_client *i2c = (struct i2c_client *)inode->i_private;
 	struct tfa9xxx *drv = i2c_get_clientdata(i2c);
 
+	if ( !drv->tfa->tfa_init ) {
+		dev_err(&drv->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
 	return single_open(file, tfa9xxx_haptic_dump_objs, drv);
 }
 
@@ -705,6 +752,24 @@ static ssize_t tfa9xxx_dbgfs_rpc_send(struct file *file,
 
 	return count;
 }
+
+/*
+ * wrap simple_open with extra checking for tfa config
+ */
+static int tfa9xxx_simple_open(struct inode *inode, struct file *file)
+{
+	struct i2c_client *i2c = (struct i2c_client *)inode->i_private;
+	struct tfa9xxx *tfa9xxx = i2c_get_clientdata(i2c);
+
+	if ( !tfa9xxx->tfa->tfa_init ) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: tfa (0x%02x) not fully probed, wrong config.\n",
+				__func__, i2c->addr);
+		return -EINVAL;
+	}
+
+	return simple_open(inode, file);
+}
+
 /* -- RPC */
 
 DEFINE_SIMPLE_ATTRIBUTE(tfa9xxx_dbgfs_calib_otc_fops, tfa9xxx_dbgfs_otc_get,
@@ -720,14 +785,14 @@ DEFINE_SIMPLE_ATTRIBUTE(tfa9xxx_dbgfs_f0_fops, tfa9xxx_dbgfs_f0_get,
 
 static const struct file_operations tfa9xxx_dbgfs_calib_start_fops = {
 	.owner  = THIS_MODULE,
-	.open   = simple_open,
+	.open   = tfa9xxx_simple_open,
 	.write  = tfa9xxx_dbgfs_start_set,
 	.llseek = default_llseek,
 };
 
 static const struct file_operations tfa9xxx_dbgfs_version_fops = {
 	.owner  = THIS_MODULE,
-	.open   = simple_open,
+	.open   = tfa9xxx_simple_open,
 	.read   = tfa9xxx_dbgfs_version_read,
 	.llseek = default_llseek,
 };
@@ -742,14 +807,14 @@ static const struct file_operations tfa9xxx_dbgfs_name_fops = {
 
 static const struct file_operations tfa9xxx_dbgfs_dsp_state_fops = {
 	.owner  = THIS_MODULE,
-	.open   = simple_open,
+	.open   = tfa9xxx_simple_open,
 	.read   = tfa9xxx_dbgfs_dsp_state_get,
 	.llseek = default_llseek,
 };
 
 static const struct file_operations tfa9xxx_dbgfs_fw_state_fops = {
 	.owner  = THIS_MODULE,
-	.open   = simple_open,
+	.open   = tfa9xxx_simple_open,
 	.read   = tfa9xxx_dbgfs_fw_state_get,
 	.llseek = default_llseek,
 };
@@ -764,7 +829,7 @@ static const struct file_operations tfa9xxx_dbgfs_haptic_objs_fops = {
 
 static const struct file_operations tfa9xxx_dbgfs_rpc_fops = {
 	.owner  = THIS_MODULE,
-	.open   = simple_open,
+	.open   = tfa9xxx_simple_open,
 	.read   = tfa9xxx_dbgfs_rpc_read,
 	.write  = tfa9xxx_dbgfs_rpc_send,
 	.llseek = default_llseek,
@@ -1322,6 +1387,11 @@ static int tfa9xxx_set_profile(struct snd_kcontrol *kcontrol,
 
 		/* update 'real' profile (container profile) */
 		tfa9xxx->profile = prof_idx;
+
+		/* no clock */
+		if (tfa9xxx->rate == 0)
+			continue;
+
 		/* Don't call tfa2_dev_start() if there is no clock. */
 		mutex_lock(&tfa9xxx->dsp_lock);
 		tfa2_dev_dsp_system_stable(tfa9xxx->tfa, &ready);
@@ -1645,7 +1715,7 @@ static void tfa9xxx_interrupt_enable(struct tfa9xxx *tfa9xxx, bool enable)
 /* Firmware management */
 static void tfa9xxx_container_loaded(const struct firmware *cont, void *context)
 {
-	nxpTfaContainer_t *container;
+	tfaContainer_t *container;
 	struct tfa9xxx *tfa9xxx = context;
 	int err;
 	int container_size;
@@ -1770,24 +1840,24 @@ static void tfa9xxx_container_loaded(const struct firmware *cont, void *context)
 	/* force ISTVDDS to be set */
 	tfa2_dev_force_cold(tfa9xxx->tfa);
 
-	if (tfa9xxx->tfa->is_probus_device == 0) {
-		/* Preload settings using internal clock on TFA2 */
-		mutex_lock(&tfa9xxx->dsp_lock);
-		err = tfa9xxx_tfa_start(tfa9xxx, tfa9xxx->profile, tfa9xxx->vstep);
-		if ((err < 0) && (err != -EPERM)) {
-			dev_err(&tfa9xxx->i2c->dev, "%s: Error loading settings on internal clock (err = %d)\n",
-			       __func__, err);
-			tfa9xxx->dsp_fw_state = TFA9XXX_DSP_FW_FAIL;
-		} else {
-			tfa9xxx->patch_loaded = tfa9xxx->haptic_mode;
-		}
-		tfa2_dev_stop(tfa9xxx->tfa);
-		mutex_unlock(&tfa9xxx->dsp_lock);
+	/* Preload settings using internal clock on TFA2 */
+	mutex_lock(&tfa9xxx->dsp_lock);
+	err = tfa9xxx_tfa_start(tfa9xxx, tfa9xxx->profile, tfa9xxx->vstep);
+	if ((err < 0) && (err != -EPERM)) {
+		dev_err(&tfa9xxx->i2c->dev, "%s: Error loading settings on internal clock (err = %d)\n",
+		       __func__, err);
+		tfa9xxx->dsp_fw_state = TFA9XXX_DSP_FW_FAIL;
+	} else {
+		tfa9xxx->patch_loaded = tfa9xxx->haptic_mode;
 	}
-		if(tfa9xxx->flags & TFA9XXX_FLAG_ADAPT_NOISE_MODE)
-			queue_delayed_work(tfa9xxx->tfa9xxx_wq,
-						&tfa9xxx->nmodeupdate_work,
-						0);
+	tfa2_dev_stop(tfa9xxx->tfa);
+	mutex_unlock(&tfa9xxx->dsp_lock);
+
+	if (tfa9xxx->flags & TFA9XXX_FLAG_ADAPT_NOISE_MODE)
+		queue_delayed_work(tfa9xxx->tfa9xxx_wq,
+		                   &tfa9xxx->nmodeupdate_work,
+		                   0);
+
 	//tfa9xxx_interrupt_enable(tfa9xxx, true);
 }
 
@@ -2921,7 +2991,7 @@ MODULE_DEVICE_TABLE(i2c, tfa9xxx_i2c_id);
 
 #ifdef CONFIG_OF
 static struct of_device_id tfa9xxx_dt_match[] = {
-	{ .compatible = "nxp,tfa9xxx" },
+	{ .compatible = "tfa,tfa9xxx" },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, tfa9xxx_dt_match);

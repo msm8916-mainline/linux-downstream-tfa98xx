@@ -1,5 +1,5 @@
 config SND_SOC_TFA9XXX
-	tristate "NXP Semiconductor TFA9894/TFA9914 audio/haptic controller support"
+	tristate "TFA9XXX audio/haptic controller support"
 	depends on I2C
 	depends on LEDS_CLASS
 	help

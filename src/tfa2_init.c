@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -193,11 +194,11 @@ static int tfa9873_init(struct tfa2_device *tfa)
 		return -ENOENT;
 
 	/* Unlock keys to write settings */
-	tfa2_i2c_unlock(tfa->i2c); /* key1 */
 	tfa2_i2c_hap_key2(tfa->i2c, 0);
 
 	switch (tfa->rev) {
 	case 0x0a73: /* Initial revision ID */
+		tfa2_i2c_unlock(tfa->i2c); /* key1 */
 		/* ----- generated code start ----- */
 		/* -----  version 28 ----- */
 		tfa2_i2c_write_reg(tfa->i2c, 0x02, 0x0628); //POR=0x0008
@@ -219,6 +220,20 @@ static int tfa9873_init(struct tfa2_device *tfa)
 		tfa2_i2c_write_reg(tfa->i2c, 0x8c, 0x0210); //POR=0x0010
 		tfa2_i2c_write_reg(tfa->i2c, 0xd5, 0x0000); //POR=0x0100
 		/* ----- generated code end   ----- */
+		tfa2_i2c_write_reg(tfa->i2c, 0xA0, 0x0000); /* key1 Relock */
+		break;
+	case 0x0b73:
+		/* ----- generated code start ----- */
+		/* -----  version 12 ----- */
+		tfa2_i2c_write_reg(tfa->i2c, 0x02, 0x0628); //POR=0x0008
+		tfa2_i2c_write_reg(tfa->i2c, 0x61, 0x0183); //POR=0x0182
+		tfa2_i2c_write_reg(tfa->i2c, 0x63, 0x005a); //POR=0x055a
+		tfa2_i2c_write_reg(tfa->i2c, 0x6f, 0x00a3); //POR=0x00a5
+		tfa2_i2c_write_reg(tfa->i2c, 0x70, 0xa3fb); //POR=0x23fb
+		tfa2_i2c_write_reg(tfa->i2c, 0x73, 0x0187); //POR=0x0107
+		tfa2_i2c_write_reg(tfa->i2c, 0x83, 0x009a); //POR=0x0799
+		tfa2_i2c_write_reg(tfa->i2c, 0xd5, 0x004d); //POR=0x014d
+		/* ----- generated code end   ----- */
 		break;
 	case 0x1a73:
 		break;
@@ -229,6 +244,10 @@ static int tfa9873_init(struct tfa2_device *tfa)
 	}
 
 	/* re-lock can't be done anymore tfa2_i2c_lock() open key1 */
+
+	/* TFA9873B0_BF_FSSYNCEN= 0x0480,    !< Enable FS synchronisation for clock divider        */
+	tfa2_i2c_write_bf(tfa->i2c, 0x0480, 0);
+	//dev_err(&tfa->i2c->dev,"Warning: disabled FS synchronisation!");
 
 	return rc;
 }
@@ -593,6 +612,9 @@ int tfa2_init_mtp_write_wrapper(struct tfa2_device *tfa, uint16_t addr, uint16_t
 		tfa2_i2c_write_bf(tfa->i2c, bf_faimvbgovrrl, faimvbgovrrl);
 
 	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_lpm1mode, lpm1mode);
+
+	/* Force key1 Relock after accessing MTP */
+	tfa2_i2c_write_reg(tfa->i2c, 0xA0, 0x0000);
 
 	return rc;
 }

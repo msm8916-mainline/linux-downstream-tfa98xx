@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -938,7 +939,7 @@ int tfa2_hap_sequencer_object(struct tfa2_device *tfa, int virtual_obj) {
 /*
  * return the nr of sequencers
  */
-int tfa2_hap_cnt_sequencer_count(nxpTfaContainer_t *cnt, int devidx) {
+int tfa2_hap_cnt_sequencer_count(tfaContainer_t *cnt, int devidx) {
 	int rc, total = 0;
 
 	do {
@@ -961,7 +962,7 @@ int tfa2_hap_cnt_sequencer_count(nxpTfaContainer_t *cnt, int devidx) {
  * 	allocate 32bit buffer
  * 	convert 24 to 32 bits into seq struct
  */
-int tfa2_hap_cnt_get_sequencer(nxpTfaContainer_t *cnt, int devidx, int seqidx, struct tfa2_sequence *seq) {
+int tfa2_hap_cnt_get_sequencer(tfaContainer_t *cnt, int devidx, int seqidx, struct tfa2_sequence *seq) {
 	int i, rc, seq_profidx;
 	uint8_t *array24;
 	int length24, length32, type;

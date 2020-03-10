@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2019 NXP Semiconductors, All Rights Reserved.
+ * Copyright 2014-2020 NXP Semiconductors
+ * Copyright 2020 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
-
 #ifndef TFA2_CONTAINER_H
 #define TFA2_CONTAINER_H
 
@@ -23,39 +23,39 @@
 // TODO move relevant comments
 #if 1
 /* tfa2_container.c */
-int tfa2_cnt_get_init_multi_msg(nxpTfaContainer_t *cnt,
+int tfa2_cnt_get_init_multi_msg(tfaContainer_t *cnt,
 		int dev_idx, int profile, char *mmsg, int *length) ;
 int tfa2_load_cnt(void *cnt, int length);
-int tfa2_cnt_crc_check_container(nxpTfaContainer_t *cont);
-char *tfa2_cnt_get_string(nxpTfaContainer_t *cnt, nxpTfaDescPtr_t *dsc);
-char *tfa2_cnt_device_name(nxpTfaContainer_t *cnt, int dev_idx);
-char *tfa2_cnt_profile_name(nxpTfaContainer_t *cnt, int dev_idx, int prof_idx);
+int tfa2_cnt_crc_check_container(tfaContainer_t *cont);
+char *tfa2_cnt_get_string(tfaContainer_t *cnt, tfaDescPtr_t *dsc);
+char *tfa2_cnt_device_name(tfaContainer_t *cnt, int dev_idx);
+char *tfa2_cnt_profile_name(tfaContainer_t *cnt, int dev_idx, int prof_idx);
 int tfa2_cnt_get_app_name(struct tfa2_device *tfa, char *name);
-int tfa2_cnt_get_cmd(nxpTfaContainer_t *cnt, int devidx, int profidx, int offset, uint8_t **array, int *length);
-nxpTfaDescPtr_t *tfa2_cnt_get_dsc(nxpTfaContainer_t *cnt, nxpTfaDescriptorType_t type, int dev_idx);
-void tfa2_cnt_show_header(nxpTfaHeader_t *hdr);
-int tfa2_cnt_get_slave(nxpTfaContainer_t *cnt, int dev_idx);
-nxpTfaDeviceList_t *tfa2_cnt_device(nxpTfaContainer_t *cnt, int dev_idx);
-nxpTfaDeviceList_t *tfa2_cnt_get_dev_list(nxpTfaContainer_t *cont, int dev_idx);
-nxpTfaProfileList_t *tfa2_cnt_get_dev_prof_list(nxpTfaContainer_t *cont, int devIdx, int profIdx);
+int tfa2_cnt_get_cmd(tfaContainer_t *cnt, int devidx, int profidx, int offset, uint8_t **array, int *length);
+tfaDescPtr_t *tfa2_cnt_get_dsc(tfaContainer_t *cnt, tfaDescriptorType_t type, int dev_idx);
+void tfa2_cnt_show_header(tfaHeader_t *hdr);
+int tfa2_cnt_get_slave(tfaContainer_t *cnt, int dev_idx);
+tfaDeviceList_t *tfa2_cnt_device(tfaContainer_t *cnt, int dev_idx);
+tfaDeviceList_t *tfa2_cnt_get_dev_list(tfaContainer_t *cont, int dev_idx);
+tfaProfileList_t *tfa2_cnt_get_dev_prof_list(tfaContainer_t *cont, int devIdx, int profIdx);
 int tfa2_dev_get_dev_nprof(struct tfa2_device *tfa);
-int tfa2_cnt_get_dev_nprof(nxpTfaContainer_t *cnt, int dev_idx);
-int tfa2_cnt_grep_profile_name(nxpTfaContainer_t *cnt, int dev_idx, const char *string);
-int tfa2_cnt_grep_nth_profile_name(nxpTfaContainer_t * cnt, int dev_idx, int n, const char *string);
-int tfa2_cnt_get_clockdep_idx(struct tfa2_device *tfa, nxpTfaDescPtr_t *dsc_list, int length, int *clockdep_idx, int *default_section_idx);
+int tfa2_cnt_get_dev_nprof(tfaContainer_t *cnt, int dev_idx);
+int tfa2_cnt_grep_profile_name(tfaContainer_t *cnt, int dev_idx, const char *string);
+int tfa2_cnt_grep_nth_profile_name(tfaContainer_t * cnt, int dev_idx, int n, const char *string);
+int tfa2_cnt_get_clockdep_idx(struct tfa2_device *tfa, tfaDescPtr_t *dsc_list, int length, int *clockdep_idx, int *default_section_idx);
 int tfa2_cnt_write_regs_dev(struct tfa2_device *tfa);
 int tfa2_cnt_check_revid(struct tfa2_device *tfa);
 int tfa2_cnt_write_regs_profile(struct tfa2_device *tfa, int prof_idx);
 int tfa2_cnt_write_msg(struct tfa2_device *tfa, int wlength, char *wbuf);
 int tfa2_cnt_write_patches(struct tfa2_device *tfa);
-int tfa2_cnt_write_msg_dsc(struct tfa2_device *tfa, nxpTfaDescPtr_t *dsc);
+int tfa2_cnt_write_msg_dsc(struct tfa2_device *tfa, tfaDescPtr_t *dsc);
 int tfa2_cnt_write_files(struct tfa2_device *tfa);
 int tfa2_cnt_write_files_profile(struct tfa2_device *tfa, int prof_idx, int vstep_idx);
 int tfa2_cnt_write_transient_profile(struct tfa2_device *tfa, int prof_idx);
-int tfa2_cnt_write_file(struct tfa2_device *tfa, nxpTfaFileDsc_t *file);
+int tfa2_cnt_write_file(struct tfa2_device *tfa, tfaFileDsc_t *file);
 int tfa2_cnt_write_profile(struct tfa2_device *tfa, int prof_idx, int vstep_idx);
 int tfa2_cnt_get_idx(struct tfa2_device *tfa);
-int tfa2_cnt_write_patch(struct tfa2_device *tfa, nxpTfaPatch_t *patchfile);
+int tfa2_cnt_write_patch(struct tfa2_device *tfa, tfaPatch_t *patchfile);
 
 //TODO move to app top level?
 void tfa2_show_current_state(struct tfa2_device *tfa);
@@ -81,18 +81,18 @@ int  tfa2_load_cnt(void *cnt, int length);
 /**
  * Return the descriptor string
  * @param cnt pointer to the container struct
- * @param dsc pointer to nxpTfa descriptor
+ * @param dsc pointer to tfa descriptor
  * @return descriptor string
  */
-char *tfa2_cnt_get_string(nxpTfaContainer_t *cnt, nxpTfaDescPtr_t *dsc);
+char *tfa2_cnt_get_string(tfaContainer_t *cnt, tfaDescPtr_t *dsc);
 
 /**
 * Return the descriptor tfahal
 * @param cnt pointer to the container struct
-* @param dsc pointer to nxpTfa descriptor
+* @param dsc pointer to tfa descriptor
 * @return descriptor tfahal
 */
-char *tfa2_cont_get_tfahal(nxpTfaContainer_t *cnt, nxpTfaDescPtr_t *dsc);
+char *tfa2_cont_get_tfahal(tfaContainer_t *cnt, tfaDescPtr_t *dsc);
 
 /**
  * Gets the string for the given command type number
@@ -109,7 +109,7 @@ char *tfa2_cnt_get_command_string(uint32_t type);
  * @param dev_idx device index
  * @return descriptor string
  */
-int tfa2_cnt_get_devid(nxpTfaContainer_t *cnt, int dev_idx);
+int tfa2_cnt_get_devid(tfaContainer_t *cnt, int dev_idx);
 
 /**
  * Get the slave for the device if it exists.
@@ -117,7 +117,7 @@ int tfa2_cnt_get_devid(nxpTfaContainer_t *cnt, int dev_idx);
  * @param the index of the device
  * @return slave
  */
-int tfa2_cnt_get_slave(nxpTfaContainer_t *cnt, int dev_idx);
+int tfa2_cnt_get_slave(tfaContainer_t *cnt, int dev_idx);
 
 void tfa2_cnt_set_slave(uint8_t slave_addr);
 
@@ -171,7 +171,7 @@ unsigned int tfa98xx_get_profile_sr(struct tfa2_device *tfa, unsigned int prof_i
  * @param dev_idx the index of the device
  * @return device name string or error string if not found
  */
-char *tfa2_cnt_device_name(nxpTfaContainer_t *cnt, int dev_idx);
+char *tfa2_cnt_device_name(tfaContainer_t *cnt, int dev_idx);
 
 /**
  * Get the application name from the container file application field
@@ -203,7 +203,7 @@ int tfa2_cnt_is_tap_profile(struct tfa2_device *tfa, int prof_idx);
  * @param prof_idx the index of the profile
  * @return profile name string or NULL string if not found
  */
-char *tfa2_cnt_profile_name(nxpTfaContainer_t *cnt, int dev_idx, int prof_idx);
+char *tfa2_cnt_profile_name(tfaContainer_t *cnt, int dev_idx, int prof_idx);
 
 /**
  * Process all items in the profilelist
@@ -222,7 +222,7 @@ int tfa2_cnt_write_profile(struct tfa2_device *tfa, int prof_idx, int vstep_idx)
  */
 void tfa98xx_set_spkr_select(int dev_idx, char *configuration);
 
-int tfa2_cont_write_filterbank(struct tfa2_device *tfa, nxpTfaFilter_t *filter);
+int tfa2_cont_write_filterbank(struct tfa2_device *tfa, tfaFilter_t *filter);
 
 /**
  * Write all  param files in the profilelist to the target
@@ -242,7 +242,7 @@ int tfa2_cnt_write_drc_file(struct tfa2_device *tfa, int size, uint8_t data[]);
  * @param dev_idx the index of the device
  * @return device list pointer
  */
-nxpTfaDeviceList_t *tfa2_cnt_get_dev_list(nxpTfaContainer_t *cont, int dev_idx);
+tfaDeviceList_t *tfa2_cnt_get_dev_list(tfaContainer_t *cont, int dev_idx);
 
 /**
  * Get the Nth profile for the Nth device
@@ -251,7 +251,7 @@ nxpTfaDeviceList_t *tfa2_cnt_get_dev_list(nxpTfaContainer_t *cont, int dev_idx);
  * @param prof_idx the index of the profile
  * @return profile list pointer
  */
-nxpTfaProfileList_t *tfa2_cnt_get_dev_prof_list(nxpTfaContainer_t *cont, int dev_idx, int prof_idx);
+tfaProfileList_t *tfa2_cnt_get_dev_prof_list(tfaContainer_t *cont, int dev_idx, int prof_idx);
 
 /**
  * Get the 1st  profilename match for this  device
@@ -260,7 +260,7 @@ nxpTfaProfileList_t *tfa2_cnt_get_dev_prof_list(nxpTfaContainer_t *cont, int dev
  * @param string to search
  * @return profile  index
  */
-int  tfa2_cnt_grep_profile_name(nxpTfaContainer_t * cnt, int devidx, const char *string);
+int  tfa2_cnt_grep_profile_name(tfaContainer_t * cnt, int devidx, const char *string);
 
 /**
  * Get the number of profiles for device from container in tfa
@@ -275,7 +275,7 @@ int tfa2_dev_get_dev_nprof(struct tfa2_device *tfa);
  * @param dev_idx the index of the device
  * @return device list pointer
  */
-int tfa2_cnt_get_dev_nprof(nxpTfaContainer_t * cnt, int dev_idx);
+int tfa2_cnt_get_dev_nprof(tfaContainer_t * cnt, int dev_idx);
 
 /**
  * Get the Nth livedata for the Nth device
@@ -284,14 +284,14 @@ int tfa2_cnt_get_dev_nprof(nxpTfaContainer_t * cnt, int dev_idx);
  * @param livedata_idx the index of the livedata
  * @return livedata list pointer
  */
-nxpTfaLiveDataList_t *tfa2_cnt_get_dev_live_data_list(nxpTfaContainer_t *cont, int dev_idx, int livedata_idx);
+tfaLiveDataList_t *tfa2_cnt_get_dev_live_data_list(tfaContainer_t *cont, int dev_idx, int livedata_idx);
 
 /**
  * Check CRC for container
  * @param cont pointer to the tfaContainer
  * @return error value 0 on error
  */
-int tfa2_cnt_crc_check_container(nxpTfaContainer_t *cont);
+int tfa2_cnt_crc_check_container(tfaContainer_t *cont);
 
 /**
  * Get the device list pointer
@@ -299,35 +299,35 @@ int tfa2_cnt_crc_check_container(nxpTfaContainer_t *cont);
  * @param dev_idx the index of the device
  * @return pointer to device list
  */
-nxpTfaDeviceList_t *tfa2_cnt_device(nxpTfaContainer_t *cnt, int dev_idx);
+tfaDeviceList_t *tfa2_cnt_device(tfaContainer_t *cnt, int dev_idx);
 
 /**
  * Return the pointer to the first profile in a list from the tfaContainer
  * @param cont pointer to the tfaContainer
  * @return pointer to first profile in profile list
  */
-nxpTfaProfileList_t *tfa2_cnt_get1st_prof_list(nxpTfaContainer_t *cont);
+tfaProfileList_t *tfa2_cnt_get1st_prof_list(tfaContainer_t *cont);
 
 /**
  * Return the pointer to the next profile in a list
  * @param prof is the pointer to the profile list
  * @return profile list pointer
  */
-nxpTfaProfileList_t* tfa2_cnt_next_profile(nxpTfaProfileList_t *prof);
+tfaProfileList_t* tfa2_cnt_next_profile(tfaProfileList_t *prof);
 
 /**
  * Return the pointer to the first livedata in a list from the tfaContainer
  * @param cont pointer to the tfaContainer
  * @return pointer to first livedata in profile list
  */
-nxpTfaLiveDataList_t *tfa2_cnt_get1st_live_data_list(nxpTfaContainer_t *cont);
+tfaLiveDataList_t *tfa2_cnt_get1st_live_data_list(tfaContainer_t *cont);
 
 /**
  * Return the pointer to the next livedata in a list
  * @param livedata_idx is the pointer to the livedata list
  * @return livedata list pointer
  */
-nxpTfaLiveDataList_t* tfa2_cnt_next_live_data(nxpTfaLiveDataList_t *livedata_idx);
+tfaLiveDataList_t* tfa2_cnt_next_live_data(tfaLiveDataList_t *livedata_idx);
 
 /**
  * Write a bit field
@@ -335,7 +335,7 @@ nxpTfaLiveDataList_t* tfa2_cnt_next_live_data(nxpTfaLiveDataList_t *livedata_idx
  * @param bf bitfield to write
  * @return errno
  */
-int tfaRunWriteBitfield(struct tfa2_device *tfa,  nxpTfaBitfield_t bf);
+int tfaRunWriteBitfield(struct tfa2_device *tfa,  tfaBitfield_t bf);
 
 /**
  * Write a parameter file to the device
@@ -343,7 +343,7 @@ int tfaRunWriteBitfield(struct tfa2_device *tfa,  nxpTfaBitfield_t bf);
  * @param file filedescriptor pointer
  * @return errno
  */
-int tfa2_cnt_write_file(struct tfa2_device *tfa,  nxpTfaFileDsc_t *file);
+int tfa2_cnt_write_file(struct tfa2_device *tfa,  tfaFileDsc_t *file);
 /**
  * Get the max volume step associated with Nth profile for the Nth device
  * @param tfa the device struct pointer
@@ -362,13 +362,13 @@ int tfacont_get_max_vstep(struct tfa2_device *tfa, int prof_idx);
  * @return 0 NULL if file type is not found
  * @return 1 file contents
  */
-nxpTfaFileDsc_t *tfacont_getfiledata(struct tfa2_device *tfa, int prof_idx, enum nxpTfaHeaderType type);
+tfaFileDsc_t *tfacont_getfiledata(struct tfa2_device *tfa, int prof_idx, enum tfaHeaderType type);
 
 /**
  * Dump the contents of the file header
  * @param hdr pointer to file header data
  */
-void tfa2_cnt_show_header(nxpTfaHeader_t *hdr);
+void tfa2_cnt_show_header(tfaHeader_t *hdr);
 
 /**
  * Read a bit field
@@ -376,7 +376,7 @@ void tfa2_cnt_show_header(nxpTfaHeader_t *hdr);
  * @param bf bitfield to read out
  * @return errno
  */
-int tfaRunReadBitfield(struct tfa2_device *tfa,  nxpTfaBitfield_t *bf);
+int tfaRunReadBitfield(struct tfa2_device *tfa,  tfaBitfield_t *bf);
 
 ///**
 // * Get hw feature bits from container file
@@ -426,7 +426,7 @@ int tfa2_cnt_get_main_profile(struct tfa2_device *tfa);
 /*
  * write the rpc msg fomr the descriptor
  */
-int tfa2_cnt_write_msg_dsc(struct tfa2_device *tfa,  nxpTfaDescPtr_t * dsc);
+int tfa2_cnt_write_msg_dsc(struct tfa2_device *tfa,  tfaDescPtr_t * dsc);
 #endif
 
 #endif /* TFA2_CONTAINER_H */
