@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 
 #include "tfa2_dev.h"
 
@@ -224,14 +225,16 @@ static int tfa9873_init(struct tfa2_device *tfa)
 		break;
 	case 0x0b73:
 		/* ----- generated code start ----- */
-		/* -----  version 12 ----- */
+		/* -----  version 20 ----- */
 		tfa2_i2c_write_reg(tfa->i2c, 0x02, 0x0628); //POR=0x0008
 		tfa2_i2c_write_reg(tfa->i2c, 0x61, 0x0183); //POR=0x0182
 		tfa2_i2c_write_reg(tfa->i2c, 0x63, 0x005a); //POR=0x055a
-		tfa2_i2c_write_reg(tfa->i2c, 0x6f, 0x00a3); //POR=0x00a5
-		tfa2_i2c_write_reg(tfa->i2c, 0x70, 0xa3fb); //POR=0x23fb
+		tfa2_i2c_write_reg(tfa->i2c, 0x6f, 0x0082); //POR=0x00a5
+		tfa2_i2c_write_reg(tfa->i2c, 0x70, 0xa3eb); //POR=0x23fb
+		tfa2_i2c_write_reg(tfa->i2c, 0x71, 0x107e); //POR=0x007e
 		tfa2_i2c_write_reg(tfa->i2c, 0x73, 0x0187); //POR=0x0107
-		tfa2_i2c_write_reg(tfa->i2c, 0x83, 0x009a); //POR=0x0799
+		tfa2_i2c_write_reg(tfa->i2c, 0x83, 0x071c); //POR=0x0799
+		tfa2_i2c_write_reg(tfa->i2c, 0x85, 0x0380); //POR=0x0382
 		tfa2_i2c_write_reg(tfa->i2c, 0xd5, 0x004d); //POR=0x014d
 		/* ----- generated code end   ----- */
 		break;
@@ -250,6 +253,186 @@ static int tfa9873_init(struct tfa2_device *tfa)
 	//dev_err(&tfa->i2c->dev,"Warning: disabled FS synchronisation!");
 
 	return rc;
+}
+static int tfa9875_init(struct tfa2_device *tfa)
+{
+	int rc = 0;
+
+	if (tfa->in_use == 0)
+		return -ENOENT;
+
+	/* Unlock keys to write settings */
+	tfa2_i2c_hap_key2(tfa->i2c, 0);
+
+	switch (tfa->rev) {
+	case 0x0a75: /* Initial revision ID */
+		tfa2_i2c_unlock(tfa->i2c); /* key1 */
+		/* ----- generated code start ----- */
+		/* -----  version 26 ----- */
+		tfa2_i2c_write_reg(tfa->i2c, 0x02, 0x0628); //POR=0x0008
+		tfa2_i2c_write_reg(tfa->i2c, 0x53, 0x0237); //POR=0x0337
+		tfa2_i2c_write_reg(tfa->i2c, 0x58, 0x0210); //POR=0x0200
+		tfa2_i2c_write_reg(tfa->i2c, 0x5f, 0x0080); //POR=0x00c0
+		tfa2_i2c_write_reg(tfa->i2c, 0x61, 0x0183); //POR=0x0182
+		tfa2_i2c_write_reg(tfa->i2c, 0x64, 0x4040); //POR=0x0040
+		tfa2_i2c_write_reg(tfa->i2c, 0x6f, 0x0083); //POR=0x00a5
+		tfa2_i2c_write_reg(tfa->i2c, 0x70, 0xdedf); //POR=0xdefb
+		tfa2_i2c_write_reg(tfa->i2c, 0x73, 0x0182); //POR=0x0187
+		tfa2_i2c_write_reg(tfa->i2c, 0x74, 0xd0f8); //POR=0x50f8
+		tfa2_i2c_write_reg(tfa->i2c, 0x75, 0xd57a); //POR=0xd278
+		tfa2_i2c_write_reg(tfa->i2c, 0x83, 0x009a); //POR=0x0799
+		tfa2_i2c_write_reg(tfa->i2c, 0x85, 0x0380); //POR=0x0382
+		tfa2_i2c_write_reg(tfa->i2c, 0xd5, 0x004d); //POR=0x014d
+		/* ----- generated code end   ----- */
+		tfa2_i2c_write_reg(tfa->i2c, 0xA0, 0x0000); /* key1 Relock */
+		break;
+	case 0x0b75:
+		break;
+	case 0x1a75:
+		/* ----- generated code start ----- */
+		/* -----  version 26 ----- */
+		tfa2_i2c_write_reg(tfa->i2c, 0x02, 0x0628); //POR=0x0008
+		tfa2_i2c_write_reg(tfa->i2c, 0x51, 0x0020); //POR=0x0000
+		tfa2_i2c_write_reg(tfa->i2c, 0x53, 0x0336); //POR=0x0337
+		tfa2_i2c_write_reg(tfa->i2c, 0x58, 0x0210); //POR=0x0200
+		tfa2_i2c_write_reg(tfa->i2c, 0x5f, 0x0080); //POR=0x00c0
+		tfa2_i2c_write_reg(tfa->i2c, 0x61, 0x0183); //POR=0x0182
+		tfa2_i2c_write_reg(tfa->i2c, 0x63, 0x056a); //POR=0x055a
+		tfa2_i2c_write_reg(tfa->i2c, 0x64, 0x4040); //POR=0x0040
+		tfa2_i2c_write_reg(tfa->i2c, 0x6f, 0x0385); //POR=0x00a5
+		tfa2_i2c_write_reg(tfa->i2c, 0x70, 0xde5f); //POR=0xdefb
+		tfa2_i2c_write_reg(tfa->i2c, 0x73, 0x0183); //POR=0x0187
+		tfa2_i2c_write_reg(tfa->i2c, 0x74, 0xd118); //POR=0x50f8
+		tfa2_i2c_write_reg(tfa->i2c, 0x75, 0xd77a); //POR=0xd278
+		tfa2_i2c_write_reg(tfa->i2c, 0x83, 0x06de); //POR=0x0799
+		tfa2_i2c_write_reg(tfa->i2c, 0x85, 0x0380); //POR=0x0382
+		tfa2_i2c_write_reg(tfa->i2c, 0x87, 0x040a); //POR=0x060a
+		/* ----- generated code end   ----- */
+		break;
+		default:
+			dev_err(&tfa->i2c->dev, "%s: unknown device revision: 0x%02x\n", __FUNCTION__, tfa->rev);
+			rc = -EINVAL;
+			break;
+	}
+
+	/* re-lock can't be done anymore tfa2_i2c_lock() open key1 */
+
+	/* TFA9875_BF_FSSYNCEN= 0x0480,    !< Enable FS synchronisation for clock divider        */
+	tfa2_i2c_write_bf(tfa->i2c, 0x0480, 0);
+	//dev_err(&tfa->i2c->dev,"Warning: disabled FS synchronisation!");
+
+	return rc;
+}
+
+int tfa9875_set_bitwidth(struct tfa2_device *tfa, int width)
+{
+	uint8_t nbck, slotlen, samplesize;
+
+	dev_dbg(&tfa->i2c->dev,
+	"tfa9875: different tdm settings for set bitwidth!\n");
+	switch ( width ) {
+	case 16: /* 16-bit sample in 16-bit slot */
+		nbck = 0;
+		slotlen = 0;
+		samplesize = 0;
+		break;
+	case 24: /* 24-bit sample in 32-bit slot */
+		nbck = 2;
+		slotlen = 2;
+		samplesize = 3;
+		break;
+	case 32: /* 32-bit sample in 32-bit slot */
+		nbck = 2;
+		slotlen = 3;
+		samplesize = 3;
+		break;
+	default:
+		dev_err(&tfa->i2c->dev, "unsupported tdm bitwidth:%d\n", width);
+		return -EINVAL;
+		break;
+	}
+
+	tfa2_i2c_write_bf_volatile(tfa->i2c, tfa->bf_tdme, 0);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmnbck, nbck);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmslln, slotlen);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmssize, samplesize);
+	/* enable tdm */
+	tfa2_i2c_write_bf_volatile(tfa->i2c, tfa->bf_tdme, 1);
+
+	return 0;
+}
+int tfa9875_set_bitfield(struct tfa2_device* tfa, uint16_t bitfield, uint16_t value)
+{
+	if(((bitfield >> 8) & 0xff) == 0x10 || ((bitfield >> 8) & 0xff) == 0x13)
+		return tfa2_i2c_write_bf_volatile(tfa->i2c, (uint16_t)bitfield, value);
+	else
+		return tfa2_i2c_write_bf(tfa->i2c, (uint16_t)bitfield, value);
+}
+
+int tfa9875_status(struct tfa2_device* tfa, uint16_t *status)
+{
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_uvds) ||
+		!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_ovds) || 
+		!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_otds) || 
+		tfa2_i2c_read_bf(tfa->i2c, tfa->bf_ocds) ||
+		tfa2_i2c_read_bf(tfa->i2c, tfa->bf_noclk))
+		dev_err(&tfa->i2c->dev, "%s: Misc errors detected: STATUS_FLAG0 = 0x%x\n", __FUNCTION__, status[0]);
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_uvds))
+		tfa9875_set_bitfield(tfa, (uint16_t)tfa->bf_uvds, 1);
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_ovds))
+		tfa9875_set_bitfield(tfa, (uint16_t)tfa->bf_ovds, 1);
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_otds))
+		tfa9875_set_bitfield(tfa, (uint16_t)tfa->bf_otds, 1);
+	if (tfa2_i2c_read_bf(tfa->i2c, tfa->bf_ocds))
+	 	tfa9875_set_bitfield(tfa, tfa->bf_ocds, 1);
+	if (tfa2_i2c_read_bf(tfa->i2c, tfa->bf_noclk))
+		tfa9875_set_bitfield(tfa, (uint16_t)tfa->bf_noclk, 1);
+	/*
+	 * checking clocking stability.
+	 */
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_clks))
+		dev_err(&tfa->i2c->dev, "%s: ERROR: CLKS is unstable\n", __FUNCTION__);
+	if (!tfa2_i2c_read_bf(tfa->i2c, tfa->bf_plls))
+	 	dev_err(&tfa->i2c->dev, "%s: ERROR: PLL not locked\n", __FUNCTION__);
+	if (tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmerr) || 
+		tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmluter)) 
+		dev_err(&tfa->i2c->dev, "%s: TDM related errors: STATUS_FLAG1 = 0x%x\n", __FUNCTION__, (uint16_t)tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmerr));
+	
+	if (tfa2_i2c_read_bf(tfa->i2c, tfa->bf_bodnok))
+	{
+		dev_err(&tfa->i2c->dev, "%s: BODNOK error detected : STATUS_FLAG3 = 0x%x\n", __FUNCTION__, (uint16_t)tfa2_i2c_read_bf(tfa->i2c, tfa->bf_bodnok));
+		tfa9875_set_bitfield(tfa, tfa->bf_bodnok, 1);
+	}
+
+	return 0;
+}
+
+int tfa9875_phase_shift(struct tfa2_device *tfa)
+{
+	int ret = 0;
+	/* 1b = enable phase shift 0b = disable phase shift */
+	ret = tfa2_i2c_write_bf_volatile(tfa->i2c, tfa->bf_control_pwm_phase_shift, (const uint16_t)1);
+	return ret;
+}
+
+int tfa9875_get_bitwidth(struct tfa2_device *tfa)
+{
+	uint8_t nbck, slotlen, samplesize;
+
+	nbck = tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmnbck);
+	slotlen = tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmslln);
+	samplesize = tfa2_i2c_read_bf(tfa->i2c,tfa->bf_tdmssize);
+
+	dev_dbg(&tfa->i2c->dev,
+	"tfa9875: different tdm settings for get bitwidth!\n");
+	if ( nbck == 0 && slotlen == 0 && samplesize == 0)
+		return 16;
+	else if ( nbck == 2 && slotlen == 2 && samplesize == 3)
+		return 24;
+	else if ( nbck == 2 && slotlen == 3 && samplesize == 3)
+		return 32;
+
+	return -EINVAL;
 }
 
 static int tfa9874_init(struct tfa2_device *tfa)
@@ -691,12 +874,15 @@ int tfa2_dev_specific(struct tfa2_device *tfa)
 {
 	switch (tfa->rev & 0xff) {
 	case 0x94:
+		/* tfa9894 */
 		if ((tfa->rev == 0x2a94) || (tfa->rev == 0x3a94)) {
 			/* bit field overloads */
 			tfa->bf_manstate = 0x1333;
 		}
+		tfa->bf_tdmnbck = 0x2103;
+		tfa->bf_tdmslln = 0x2204;
+		tfa->bf_tdmssize = 0x22a4;
 
-		/* tfa9894 */
 		tfa->tfa_init = tfa9894_init;
 		break;
 	case 0x13:
@@ -712,6 +898,7 @@ int tfa2_dev_specific(struct tfa2_device *tfa)
 		tfa->bf_swvstep = 0xef0f;
 		tfa->bf_lpm1mode = 0x65c0; /* TFA9912_BF_LPM1DIS */
 		tfa->bf_r25c = 0xf40f;
+		tfa->bf_tdme = 0x2040;
 
 		tfa->status_mask[0] = 0x0014; /* UVDS, OTDS */
 		tfa->status_mask[1] = 0x2180; /* SWS, TDMLUTER, CLKS */
@@ -733,7 +920,8 @@ int tfa2_dev_specific(struct tfa2_device *tfa)
 		tfa->bf_swvstep = 0xef0f;
 		tfa->bf_openmtp = 0x05c0; /* TFA9872_BF_SSFAIME */
 		tfa->bf_lpm1mode = 0x65c0;/* TFA9872_BF_LPM1DIS */
-		
+		tfa->bf_tdme = 0x2040;
+
 		tfa->status_mask[0] = 0x043c; /* SWS, CLKS, UVDS, OVDS, OTDS */
 		tfa->status_mask[1] = 0x0100; /* TDMLUTER */
 		tfa->status_mask[2] = 0x0000;
@@ -757,6 +945,7 @@ int tfa2_dev_specific(struct tfa2_device *tfa)
 		tfa->bf_swprofil = 0xee0f;
 		tfa->bf_swvstep = 0xef0f;
 		tfa->bf_lpm1mode = 0x64e1;
+		tfa->bf_tdme = 0x2040;
 
 		tfa->status_mask[0] = 0x0014; /* UVDS, OTDS */
 		tfa->status_mask[1] = 0x2180; /* SWS, TDMLUTER, CLKS */
@@ -808,6 +997,46 @@ int tfa2_dev_specific(struct tfa2_device *tfa)
 		tfa->tfa_init = tfa9873_init;
 		tfa->is_probus_device = 1;
 		break;
+	case 0x75:
+		/* bit field overloads */
+		tfa->bf_clks = 0x1100;
+		tfa->bf_mtpb = 0x1110;
+		tfa->bf_lpm1mode = 0x64e1;
+		tfa->bf_manstate = 0x1203;
+		tfa->bf_tdmslln = 0x2081;
+		tfa->bf_tdmnbck = 0x20c3;
+		tfa->bf_tdmssize = 0x20a1;
+
+		tfa->bf_bodnok = 0x1300;
+		tfa->bf_plls = 0x1170;
+		tfa->bf_ovds = 0x1030;
+		tfa->bf_ocds = 0x1040;
+		tfa->bf_uvds = 0x1020;
+		tfa->bf_otds = 0x1010;
+		tfa->bf_tdmerr = 0x1120;
+		tfa->bf_tdmluter = 0x1180;
+		tfa->bf_noclk = 0x1050;
+
+		tfa->status_mask[0] = 0x0007; /* CLKS, UVDS, OTDS */
+		tfa->status_mask[1] = 0x0300; /* SWS, TDMLUTER */
+		tfa->status_mask[2] = 0x0000;
+		tfa->status_mask[3] = 0x0008; /* OVDS */
+
+		tfa->status_err[0] = 0x00a1;
+		tfa->status_err[1] = 0x1f05;
+		tfa->status_err[2] = 0;
+		tfa->status_err[3] = 0x5200;
+		tfa->bf_control_pwm_phase_shift = 0x58c0;
+
+		/* tfa9875 */
+		tfa->tfa_init = tfa9875_init;
+		tfa->tfa_set_bitwidth = tfa9875_set_bitwidth;
+		tfa->tfa_get_bitwidth = tfa9875_get_bitwidth;
+		tfa->tfa_set_bitfield = tfa9875_set_bitfield;
+		tfa->is_probus_device = 1;
+		tfa->tfa_status = tfa9875_status;
+		tfa->phase_shift = tfa9875_phase_shift;
+		break;	
 	case 0x00:
 		/* external DSP */
 		tfa->is_extern_dsp_device = 1;

@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 #ifndef TFA2_CONTAINER_H
 #define TFA2_CONTAINER_H
 
@@ -14,6 +15,7 @@
 #define MEMTRACK_MAX_WORDS           150
 #define LSMODEL_MAX_WORDS            150
 #define TFA98XX_MAXTAG              (150)
+#define TFA98XX_MAX_LIB_VER          75 /* 25 characters of 24-bit each. Example: tfadsp_PREPROC 06.04.01 */
 #define FW_VAR_API_VERSION          (521)
 
 #include "tfa2_dev.h"

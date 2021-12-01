@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 
 
 #ifndef TFA2_DEV_H_
@@ -100,6 +101,10 @@ typedef enum tfa9xxx_core_bf {
 	TFA9XXX_BF_SPKS  = 0x1170,    /*!< Speaker status                                     */
 	TFA9XXX_BF_TDMERR= 0x11a0,    /*!< TDM error                                          */
 	TFA9XXX_BF_TDMLUTER= 0x11b0,  /*!< TDM lookup table error                             */
+	TFA9XXX_BF_TDME  = 0x2000,    /*!< Enable interface                                   */
+	TFA9XXX_BF_TDMNBCK= 0x20c3,    /*!< N-BCK's in FS                                      */
+	TFA9XXX_BF_TDMSLLN= 0x2144,    /*!< N-bits in slot                                     */
+	TFA9XXX_BF_TDMSSIZE= 0x2224,    /*!< Sample size per slot                               */
 	TFA9XXX_BF_DMEM  = 0x9011,    /*!< Target memory for CFMA using I2C interface         */
 	TFA9XXX_BF_I2CR  = 0x0010,    /*!< I2C Reset - Auto clear                             */
 	TFA9XXX_BF_ICLVDDS= 0x4400,    /*!< Clear POR                                          */
@@ -267,6 +272,7 @@ struct tfa2_device {
 	int hw_feature_bits;    /**< cached copy of hw feature bits */
 	int profile;            /**< active profile */
 	int vstep;              /**< active vstep */
+	int dynamicTDMmode; /**tracking dynamic TDM setting from alsa input stream*/
 //	unsigned char spkr_count;
 //	unsigned char spkr_select;
 //	unsigned char support_tcoef;/**< legacy tfa9887, will be removed */
@@ -288,10 +294,12 @@ struct tfa2_device {
 //	int sync_iv_delay; /**< synchronize I/V delay at cold start */
 	int is_probus_device; /**< probus device: device without internal DSP */
 	int is_extern_dsp_device; /**< externel (non Coolflux) DSP device */
+	int is_fResCalDamaged; /**< runtime status of fResCalDamage */
 //	int needs_reset; /**< add the reset trigger for SetAlgoParams and SetMBDrc commands */
 //	struct kmem_cache *cachep;	/**< Memory allocator handle */
 //	struct tfa_hal_dev *hal;  /* Device HAL plugin handle >>>> moved to i2c_client */
 	int reg_time; /* worst case register read time in usec, for adding extra clock read delay */
+	unsigned int rate;
 	/* function pointer for per-device overloading */
 	int (*tfa_init)(struct tfa2_device *tfa); /**< init for POR fixes like loading optimal settings */
 	uint16_t bf_clks;  /**<     TFA9XXX_BF_CLKS   Clocks stable for overload   */
@@ -304,6 +312,19 @@ struct tfa2_device {
 	uint16_t bf_openmtp; /**< TFA9XXX_BF_OPENMTP overload */
 	uint16_t bf_lpm1mode; /**<  TFA9XXX_BF_LPM1MODE overload */
 	uint16_t bf_r25c; /**<  TFA9XXX_BF_R25C overload */
+	uint16_t bf_tdme;    /**!< TFA9XXX_BF_TDME Enable interface */
+	uint16_t bf_tdmnbck;    /**!< TFA9XXX_BF_TDMNBCK N-BCK's in FS    */
+	uint16_t bf_tdmslln;    /**!< TFA9XXX_BF_TDMSLLN N-bits in slot   */
+	uint16_t bf_tdmssize;    /**!< TFA9XXX_BF_TDMSSIZE Sample size per slot */
+	uint16_t bf_bodnok;		/**!< BODNOK flag VDD NOT OK sticky flag **/
+	uint16_t bf_plls;		/**!< PLLS **/
+	uint16_t bf_ocds;		/**!< OCDS **/
+	uint16_t bf_ovds;		/**!< OVDS **/
+	uint16_t bf_uvds;		/**!< UVDS **/
+	uint16_t bf_otds;		/**!< OTDS **/
+	uint16_t bf_tdmerr;		/**!< TDMERR **/
+	uint16_t bf_tdmluter;	/**!< TDMLUTTER **/
+	uint16_t bf_control_pwm_phase_shift;
 	uint16_t status_mask[4]; /**< status masks for tfa2_dev_status() */
 	uint16_t status_err[4]; /**< error status for tfa2_dev_status() */
 	struct haptic_data hap_data;  /**< haptic specific data */
@@ -311,6 +332,11 @@ struct tfa2_device {
 	                   size_t cmd_len);
 	int (*dsp_execute)(struct tfa2_device *tfa, const char *cmd_buf,
 	                   size_t cmd_len, char *res_buf, size_t res_len);
+	int (*tfa_set_bitwidth)(struct tfa2_device *tfa, int width); 
+	int (*tfa_get_bitwidth)(struct tfa2_device *tfa);
+	int (*tfa_set_bitfield)(struct tfa2_device* tfa, uint16_t bitfield, uint16_t value);
+	int (*tfa_status)(struct tfa2_device* tfa, uint16_t *status);
+	int (*phase_shift)(struct tfa2_device* tfa);
 };
 
 #pragma pack (push, 1)
@@ -437,6 +463,9 @@ int tfa2_get_noclk(struct tfa2_device *tfa);
 int tfa2_dev_set_volume(struct tfa2_device *tfa, uint8_t volume);
 int tfa2_dev_get_volume(struct tfa2_device *tfa);
 
+int tfa2_dev_set_tdm_bitwidth(struct tfa2_device *tfa, int width);
+int tfa2_dev_get_tdm_bitwidth(struct tfa2_device *tfa);
+
 // from tfa_service.h
 /**
  * Load the default HW settings in the device
@@ -546,6 +575,7 @@ int tfa2dsp_fw_get_api_version(struct tfa2_device *tfa, uint8_t *buffer);
 int tfa2dsp_fw_get_status_change(struct tfa2_device *tfa, uint8_t *buffer);
 int tfa2dsp_fw_get_re25(struct tfa2_device *tfa, uint8_t *buffer);
 int tfa2dsp_fw_get_tag(struct tfa2_device *tfa, uint8_t *buffer);
+int tfa2dsp_fw_get_library_version(struct tfa2_device *tfa, uint8_t *buffer);
 
 /*
  * set ISTVDDS

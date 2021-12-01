@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 #include "tfa2_dev.h" /* for regwrite */
 #include "tfa2_container.h"
 
@@ -831,6 +832,14 @@ int tfa2_cnt_write_profile(struct tfa2_device *tfa, int prof_idx, int vstep_idx)
 				"Error trying to get the (previous) swprofile \n");
 		return -EINVAL;
 	}
+#if 0
+	/* if no previous profile use dummy settings to avoid wrong operations */
+	if ( !previous_prof ) {
+		no_previous_prof.length = 0;
+		no_previous_prof.group = -1;
+		previous_prof = &no_previous_prof;
+	}
+#endif
 
 	/* grouping enabled ? */
 	in_group = prof->group == previous_prof->group && prof->group != 0;
@@ -945,5 +954,12 @@ int tfa2_cnt_get_idx(struct tfa2_device *tfa)
 		return -1;
 
 	return i;
+}
+
+int tfa9xxx_set_phase_shift(struct tfa2_device *tfa)
+{
+	if(tfa->phase_shift)
+		return (tfa->phase_shift)(tfa);
+	return -1;
 }
 

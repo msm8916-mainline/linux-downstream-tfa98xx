@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -25,7 +25,7 @@
 #ifdef TFA9XXX_GIT_VERSION
   #define TFA9XXX_VERSION TFA9XXX_GIT_VERSION
 #else
-  #define TFA9XXX_VERSION "v8.5.1"
+  #define TFA9XXX_VERSION "v8.17.0"
 #endif
 
 #define I2C_RETRIES 50
@@ -75,8 +75,8 @@ module_param(no_monitor, int, S_IRUGO);
 MODULE_PARM_DESC(no_monitor, "do not use status monitor thread\n");
 
 static int pcm_sample_format = 0;
-module_param(pcm_sample_format, int, S_IRUGO);
-MODULE_PARM_DESC(pcm_sample_format, "PCM sample format: 0=S16_LE, 1=S24_LE, 2=S32_LE\n");
+module_param(pcm_sample_format, int, S_IRUGO); /*Be carefull:  setting pcm_sample_format to 3 means TDM settings will be dynamically adapted */
+MODULE_PARM_DESC(pcm_sample_format, "PCM sample format: 0=S16_LE, 1=S24_LE, 2=S32_LE, 3=dynamic\n");
 
 static int pcm_no_constraint = 0;
 module_param(pcm_no_constraint, int, S_IRUGO);
@@ -1853,11 +1853,6 @@ static void tfa9xxx_container_loaded(const struct firmware *cont, void *context)
 	tfa2_dev_stop(tfa9xxx->tfa);
 	mutex_unlock(&tfa9xxx->dsp_lock);
 
-	if (tfa9xxx->flags & TFA9XXX_FLAG_ADAPT_NOISE_MODE)
-		queue_delayed_work(tfa9xxx->tfa9xxx_wq,
-		                   &tfa9xxx->nmodeupdate_work,
-		                   0);
-
 	//tfa9xxx_interrupt_enable(tfa9xxx, true);
 }
 
@@ -2014,8 +2009,11 @@ static int tfa9xxx_startup(struct snd_pcm_substream *substream,
 
 	if (pcm_no_constraint != 0)
 		return 0;
-
+	tfa9xxx->tfa->dynamicTDMmode = pcm_sample_format;
 	switch (pcm_sample_format) {
+	case 0:
+		formats = SNDRV_PCM_FMTBIT_S16_LE;
+		break;
 	case 1:
 		formats = SNDRV_PCM_FMTBIT_S24_LE;
 		break;
@@ -2023,7 +2021,7 @@ static int tfa9xxx_startup(struct snd_pcm_substream *substream,
 		formats = SNDRV_PCM_FMTBIT_S32_LE;
 		break;
 	default:
-		formats = SNDRV_PCM_FMTBIT_S16_LE;
+		formats = TFA9XXX_FORMATS;
 		break;
 	}
 
@@ -2147,13 +2145,18 @@ static int tfa9xxx_hw_params(struct snd_pcm_substream *substream,
 
 	/* Supported */
 	rate = params_rate(params);
-	dev_dbg(&tfa9xxx->i2c->dev, "%s: Requested rate: %d, sample size: %d, physical size: %d\n",
+	dev_dbg(&tfa9xxx->i2c->dev, "%s: Requested rate: %d, sample size: %d, physical size: %d, tdm mode: %d\n",
 			__func__,
 			rate, snd_pcm_format_width(params_format(params)),
-			snd_pcm_format_physical_width(params_format(params)));
+			snd_pcm_format_physical_width(params_format(params)),
+			tfa9xxx->tfa->dynamicTDMmode);
 
 	if (no_start != 0)
 		return 0;
+
+	/* set TDM bit width */
+	if ((tfa9xxx->tfa->dynamicTDMmode == 3) && tfa2_dev_set_tdm_bitwidth(tfa9xxx->tfa, params_width(params) )  )
+		return -EINVAL;
 
 	/* check if samplerate is supported for this mixer profile */
 	prof_idx = get_profile_id_for_sr(tfa9xxx_mixer_profile, rate);
@@ -2169,7 +2172,7 @@ static int tfa9xxx_hw_params(struct snd_pcm_substream *substream,
 	tfa9xxx->profile = prof_idx;
 
 	/* update to new rate */
-	tfa9xxx->rate = rate;
+	tfa9xxx->rate  = tfa9xxx->tfa->rate = rate;
 
 	return 0;
 }
@@ -2216,7 +2219,8 @@ static int tfa9xxx_mute(struct snd_soc_dai *dai, int mute, int stream)
 			tfa2_dev_stop(tfa9xxx->tfa);
 		tfa9xxx->dsp_init = TFA9XXX_DSP_INIT_STOPPED;
 		mutex_unlock(&tfa9xxx->dsp_lock);
-
+		if (tfa9xxx->flags & TFA9XXX_FLAG_ADAPT_NOISE_MODE)
+			cancel_delayed_work_sync(&tfa9xxx->nmodeupdate_work);
 		/* set rate to 0 to indicate that no audio is active */
 		tfa9xxx->rate = 0;
 	} else {
@@ -2231,6 +2235,11 @@ static int tfa9xxx_mute(struct snd_soc_dai *dai, int mute, int stream)
 		/* disable haptic f0 tracking for audio playback */
 		if (tfa9xxx->haptic_mode && (stream == SNDRV_PCM_STREAM_PLAYBACK))
 			tfa9xxx_disable_f0_tracking(tfa9xxx, true);
+		if (tfa9xxx->flags & TFA9XXX_FLAG_ADAPT_NOISE_MODE)
+			queue_delayed_work(tfa9xxx->tfa9xxx_wq,
+		                   &tfa9xxx->nmodeupdate_work,
+		                   0);
+
 	}
 
 	return 0;
@@ -2292,14 +2301,14 @@ static struct snd_soc_dai_driver tfa9xxx_dai[] = {
 		.playback = {
 			.stream_name = "AIF Playback",
 			.channels_min = 1,
-			.channels_max = 4,
+			.channels_max = 8,
 			.rates = TFA9XXX_RATES,
 			.formats = TFA9XXX_FORMATS,
 		},
 		.capture = {
 			 .stream_name = "AIF Capture",
 			 .channels_min = 1,
-			 .channels_max = 4,
+			 .channels_max = 8,
 			 .rates = TFA9XXX_RATES,
 			 .formats = TFA9XXX_FORMATS,
 		 },
@@ -2827,6 +2836,9 @@ static int tfa9xxx_i2c_probe(struct i2c_client *i2c,
 		case 0x74: /* tfa9874 */
 			dev_info(&i2c->dev, "TFA9874 detected\n");
 			break;
+		case 0x75: /* tfa9875 */
+			dev_info(&i2c->dev, "TFA9875 detected\n");
+			break;	
 		case 0x78: /* tfa9878 */
 			dev_info(&i2c->dev, "TFA9878 detected\n");
 			break;

@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 
 #ifndef TFA2_DSP_FW_H
 #define TFA2_DSP_FW_H
@@ -35,7 +36,9 @@ enum tfa_fw_event { /* not all available on each device */
 #define MODULE_SPEAKERBOOST     1
 #define MODULE_BIQUADFILTERBANK 2
 #define MODULE_TAPTRIGGER		5
+#define MODULE_VIB				6			// converts to 0x86 in used function by adding 128 decimal
 #define MODULE_SETRE 			9
+#define MODULE_VIB_2			0x6A		// converts to 0xEA in used function by adding 128 decimal
 
 /* RPC commands */
 /* SET */
@@ -57,6 +60,7 @@ enum tfa_fw_event { /* not all available on each device */
 #define FW_PAR_ID_GET_MEMTRACK          0x8B
 #define FW_PAR_ID_GET_TAG               0xFF
 #define FW_PAR_ID_GET_API_VERSION 		0xFE
+#define FW_PAR_ID_GET_LIBRARY_VERSION   0xFD
 #define FW_PAR_ID_GET_STATUS_CHANGE		0x8D
 
 /* Load a full model into SpeakerBoost. */
@@ -79,10 +83,15 @@ enum tfa_fw_event { /* not all available on each device */
 #define SB_PARAM_GET_MBDRC_DYNAMICS		0x89
 #define SB_PARAM_GET_EXCURSION_FILTERS	0x8A
 #define SB_PARAM_GET_TAG                0xFF
+#define SB_PARAM_GET_LIBRARY_VERSION    0xFD
 #define FW_MAXTAG 150
+#define FW_MAX_LIB_VER                  (25*3) /* 25 characters of 24-bit each. Example: tfadsp_PREPROC 06.04.01 */
 
 #define SB_PARAM_GET_ZFILTER            0x8F
 #define SB_PARAM_GET_XFILTER            0x90
+
+#define SB_PARAM_GET_XFILTER_COMBINED            0x90
+
 
 #define SB_PARAM_SET_EQ					0x0A	/* 2 Equaliser Filters. */
 #define SB_PARAM_SET_PRESET             0x0D	/* Load a preset */
@@ -94,6 +103,18 @@ enum tfa_fw_event { /* not all available on each device */
 #define SB_PARAM_GET_XMODEL_COEFFS      0x8C    /* Get coefficients for XModel */
 #define SB_PARAM_GET_EXCURSION_FILTERS  0x8A    /* Get excursion filters */
 #define SB_PARAM_SET_EXCURSION_FILTERS  0x0A    /* Set excursion filters */
+
+/* HB 1.6 GET */
+#define HB_PARAM_GET_ALGO_PARAMS               0x80
+#define HB_PARAM_GET_OBJECT_TABLE              0x82
+#define HB_PARAM_GET_WAVE_TABLE                        0x84
+#define HB_PARAM_GET_LRA_MODEL                 0x88
+
+/* HB 1.6 SET */
+#define HB_PARAM_SET_ALGO_PARAMS               0x00
+#define HB_PARAM_SET_OBJECT_TABLE              0x02
+#define HB_PARAM_SET_WAVE_TABLE                        0x04
+#define HB_PARAM_SET_LRA_MODEL                 0x08
 
 /*	SET: TAPTRIGGER */
 #define TAP_PARAM_SET_ALGO_PARAMS		0x01

@@ -1,12 +1,13 @@
 /*
  * Copyright 2014-2020 NXP Semiconductors
- * Copyright 2020 GOODIX
+ * Copyright 2020-2021 GOODIX
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+
 
 #define pr_fmt(fmt) "%s(): " fmt, __FUNCTION__
 
@@ -161,6 +162,7 @@ int tfa2_set_query_info(struct tfa2_device *tfa)
 	tfa->vstep = -1;
 	tfa->need_hw_init=-1;
 	tfa->need_sb_config=-1;
+	tfa->dynamicTDMmode = -1; /**tracking dynamic TDM setting from alsa input stream*/
 	tfa->need_hb_config= tfa_hb_undetermined;
 	/* defaults */
 //	tfa->supportDrc = supportNotSet;
@@ -182,6 +184,10 @@ int tfa2_set_query_info(struct tfa2_device *tfa)
 	tfa->bf_openmtp = TFA9XXX_BF_OPENMTP; /* default 94N1A */
 	tfa->bf_lpm1mode = TFA9XXX_BF_LPM1MODE; /* default 94N1A */
 	tfa->bf_r25c = TFA9XXX_BF_R25C; /* default 94N1A */
+	tfa->bf_tdme = TFA9XXX_BF_TDME; /* default 78 */
+	tfa->bf_tdmnbck = TFA9XXX_BF_TDMNBCK; /* default 78 */
+	tfa->bf_tdmslln = TFA9XXX_BF_TDMSLLN; /* default 78 */
+	tfa->bf_tdmssize = TFA9XXX_BF_TDMSSIZE; /* default 78 */
 
 	tfa->status_mask[0] = 0x085c; /* SWS, CLKS, UVDS, OVDS, OTDS */
 	tfa->status_mask[1] = 0x0c00; /* TDMLUTER, TDMERR */
@@ -234,6 +240,14 @@ int tfa2_dev_start_hw(struct tfa2_device *tfa, int profile)
 
 	/* device specific fixes */
 	tfa2_init_fix_powerup(tfa);
+
+#ifdef __KERNEL__
+#if 0
+	/* Control for PWM phase shift */
+	if (tfa->bitwidth == 24 && tfa->rate == 16)/*TFA9875-240*/
+		tfa9xxx_set_phase_shift(tfa);
+#endif
+#endif
 
 	/* Go to the initCF state in mute */
 	rc = tfa2_dev_set_state(tfa, TFA_STATE_POWERUP  |  TFA_STATE_MUTE);
@@ -407,7 +421,7 @@ int tfa2_dev_start(struct tfa2_device *tfa, int next_profile, int vstep)
 
 	active_profile_name = tfa2_cnt_profile_name(tfa->cnt, tfa->dev_idx, active_profile);
 
-	dev_info(&tfa->i2c->dev, " [SB] active profile:%s, next profile:%s\n",
+	dev_info(&tfa->i2c->dev, " [0x%x] Switching from profile %s to %s\n", tfa->slave_address,
 			active_profile_name ? active_profile_name : "none",
 			tfa2_cnt_profile_name(tfa->cnt, tfa->dev_idx, next_profile));
 
@@ -858,7 +872,7 @@ int tfa2_dev_init(struct tfa2_device *tfa)
 	 *  The I2CR bit may overwrite the full register because it is reset anyway.
 	 */
 	tfa2_i2c_set_bf_value(TFA9XXX_BF_I2CR, 1, &value ); /* This will save an i2c reg read */
-	error = tfa2_i2c_write_reg(tfa->i2c, TFA9XXX_BF_I2CR, value);
+	error = tfa2_i2c_write_reg(tfa->i2c, TFA9XXX_BF_I2CR >> 8, value); /* write to register */
 	if (error)
 		return error;
 	/* Put DSP in reset */
@@ -2304,6 +2318,10 @@ int tfa2dsp_fw_get_status_change(struct tfa2_device *tfa, uint8_t *buffer) {
 
 	return result_length;
 }
+
+/* Note: From FW API version xx.28.xx (SB3.5), it is recommended to use GetLibraryVersion
+   instead of GetTag FW command. Hence, the GetTag command should not be used as it will be
+   deprecated in later FW versions */
 int tfa2dsp_fw_get_tag(struct tfa2_device *tfa, uint8_t *buffer) {
 
 	int command_length = 3;
@@ -2314,6 +2332,25 @@ int tfa2dsp_fw_get_tag(struct tfa2_device *tfa, uint8_t *buffer) {
 	*pbuf++ = 0;
 	*pbuf++ = MODULE_FRAMEWORK + 0x80;
 	*pbuf++ = FW_PAR_ID_GET_TAG;
+
+	hal_error = tfadsp_writeread(tfa, command_length, buffer, result_length);
+
+	if ( hal_error != 0)
+		return hal_error * -1;
+
+	return 6;
+}
+
+int tfa2dsp_fw_get_library_version(struct tfa2_device *tfa, uint8_t *buffer) {
+
+	int command_length = 3;
+	int result_length = FW_MAX_LIB_VER+3;
+	uint8_t *pbuf = buffer;
+	int hal_error;
+
+	*pbuf++ = 0;
+	*pbuf++ = MODULE_FRAMEWORK + 0x80;
+	*pbuf++ = FW_PAR_ID_GET_LIBRARY_VERSION;
 
 	hal_error = tfadsp_writeread(tfa, command_length, buffer, result_length);
 
@@ -2337,6 +2374,8 @@ int tfa2_dev_status(struct tfa2_device *tfa)
 	if (rc < 0)
 		return rc;
 
+	if(tfa->tfa_status != NULL)
+		return(tfa->tfa_status(tfa, status));
 	/*
 	 * check IC status bits: cold start
 	 * and DSP watch dog bit to re init
@@ -2367,6 +2406,87 @@ int tfa2_dev_status(struct tfa2_device *tfa)
 	}
 
 	return 0;
+}
+
+/*
+ * set the TDM interface bit width
+ */
+int tfa2_dev_set_tdm_bitwidth(struct tfa2_device *tfa, int width)
+{
+	uint8_t nbck, slotlen, samplesize;
+
+	if (tfa->tfa_set_bitwidth != NULL)
+	{
+		return (tfa->tfa_set_bitwidth)(tfa, width);
+	}
+	else
+	{
+		dev_dbg(&tfa->i2c->dev,
+		"tfa9xxx: normal tdm settings for set bitwidth!\n");
+		switch ( width ) {
+		case 16: /* 16-bit sample in 16-bit slot */
+			nbck = 0;
+			slotlen = 15;
+			samplesize = 15;
+			break;
+		case 24: /* 24-bit sample in 32-bit slot */
+			nbck = 2;
+			slotlen = 31;
+			samplesize = 23;
+			break;
+		case 32: /* 32-bit sample in 32-bit slot */
+			nbck = 2;
+			slotlen = 31;
+			samplesize = 31;
+			break;
+		default:
+			dev_err(&tfa->i2c->dev, "unsupported tdm bitwidth:%d\n", width);
+			return -EINVAL;
+			break;
+		}
+	}
+	/* stop tdm */
+	tfa2_i2c_write_bf_volatile(tfa->i2c, tfa->bf_tdme, 0);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmnbck, nbck);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmslln, slotlen);
+	tfa2_i2c_write_bf(tfa->i2c, tfa->bf_tdmssize, samplesize);
+	/* enable tdm */
+	tfa2_i2c_write_bf_volatile(tfa->i2c, tfa->bf_tdme, 1);
+
+	return 0;
+
+}
+/*
+ * get the current TDM interface bit width (supported values)
+ *
+ *  return 16, 24, 32 or -EINVAL
+ */
+int tfa2_dev_get_tdm_bitwidth(struct tfa2_device *tfa) {
+	uint8_t nbck, slotlen, samplesize;
+
+	nbck = tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmnbck);
+	slotlen = tfa2_i2c_read_bf(tfa->i2c, tfa->bf_tdmslln);
+	samplesize = tfa2_i2c_read_bf(tfa->i2c,tfa->bf_tdmssize);
+
+	if (tfa->tfa_get_bitwidth != NULL)
+	{
+		return (tfa->tfa_get_bitwidth)(tfa);
+	}
+	else
+	{		
+		dev_dbg(&tfa->i2c->dev,
+		"tfa9xxx: normal tdm settings for get bitwidth!\n");
+		if ( nbck == 0 && slotlen == 15 && samplesize == 15)
+			return 16;
+		else if ( nbck == 2 && slotlen == 31 && samplesize == 23)
+			return 24;
+		else if ( nbck == 2 && slotlen == 31 && samplesize == 31)
+			return 32;	
+	}
+	
+	
+
+	return -EINVAL;
 }
 
 int tfa2_dev_set_volume(struct tfa2_device *tfa, uint8_t volume)
